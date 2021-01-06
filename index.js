@@ -1,5 +1,5 @@
-class Slideshow{
-    constructor(_element){
+class Slideshow {
+    constructor(_element) {
         this.element = _element;
         this.slides = Array.from(_element.querySelectorAll('.slide'));
         this.slidesWrapper = null;
@@ -10,16 +10,41 @@ class Slideshow{
         this.nbSlides = this.slides.length;
         this.indicators = null;
         this.ratio = 100 / this.nbSlides;
+        this.loop = this.element.getAttribute("data-loop") == "true" ? true : false;
 
         this.render();
         this.setStyle();
+
+        this.setIndex(Number(this.loop));
     }
 
     // Create the final html element
-    render(){
+    render() {
         this.frame = Slideshow.createElement('div', 'frame');
         this.slidesWrapper = Slideshow.createElement('div', 'slides-wrapper');
-        this.slides.forEach((slide) => {this.slidesWrapper.appendChild(slide)});
+        this.indicators = Array(this.nbSlides).fill().map((el, i) => el = Slideshow.createElement('button', 'indicator'));
+
+        if (this.loop) {
+            this.createLoop();
+
+            this.slidesWrapper.addEventListener('transitionend', () => {
+                if (this.index == 0 || this.index == this.nbSlides - 1) {
+                    this.slidesWrapper.style.transition = 'none';
+                    if (this.index == 0) {
+                        this.index = this.nbSlides - 2;
+                    } else if(this.index == this.nbSlides - 1){
+                        this.index = 1;
+                    }
+                    this.setIndex(this.index);
+                    setTimeout(() => {
+                        this.slidesWrapper.style.transition = 'transform 0.3s';
+                    }, 0)
+                }
+                // this.setActiveIndicator();
+            });
+        }
+
+        this.slides.forEach((slide) => { this.slidesWrapper.appendChild(slide) });
         this.arrowLeft = Slideshow.createElement('button', 'arrow', 'arrow-left');
         this.arrowLeft.appendChild(Slideshow.createNavSvg());
         this.arrowRight = Slideshow.createElement('button', 'arrow', 'arrow-right');
@@ -27,12 +52,10 @@ class Slideshow{
         this.frame.appendChild(this.slidesWrapper);
         this.indicatorsWrapper = Slideshow.createElement('div', 'indicators');
 
-        this.indicators = Array(this.nbSlides).fill().map((el, i) => el = Slideshow.createElement('button', 'indicator'));
-
         this.indicators.forEach((el, index) => {
             this.indicatorsWrapper.appendChild(el);
             el.addEventListener('click', () => {
-                this.setIndex(index);
+                this.setIndex(index + Number(this.loop));
             })
         });
 
@@ -49,9 +72,21 @@ class Slideshow{
         this.element.appendChild(this.frame);
         this.element.appendChild(this.arrowRight);
         this.element.appendChild(this.indicatorsWrapper);
+
+
     }
 
-    static createNavSvg(){
+    createLoop() {
+        const firstSlideCopy = this.slides[0].cloneNode(true);
+        const lastSlideCopy = this.slides[this.nbSlides - 1].cloneNode(true);
+
+        this.slides.push(firstSlideCopy);
+        this.slides.unshift(lastSlideCopy);
+        this.nbSlides = this.slides.length;
+        this.ratio = 100 / this.nbSlides;
+    }
+
+    static createNavSvg() {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         svg.setAttribute('viewBox', '0 0 443.52 443.52');
@@ -62,36 +97,45 @@ class Slideshow{
         return svg;
     }
 
-    setIndex(_index){
-        if(_index >= 0 && _index < this.nbSlides){
+    setActiveIndicator(){
+        this.indicatorsWrapper.querySelector('.active').classList.remove('active');
+        this.indicators[this.index - Number(this.loop)].classList.add('active');
+    }
+
+    setIndex(_index) {
+        if (_index >= 0 && _index < this.nbSlides) {
             this.index = _index;
-            this.indicatorsWrapper.querySelector('.active').classList.remove('active');
-            this.indicators[this.index].classList.add('active');
             this.goTo();
+
+            if(this.loop && (this.index >= 1 && this.index <= this.indicators.length)){
+                this.setActiveIndicator();
+            }else if(!this.loop){
+                this.setActiveIndicator();
+            }
         }
     }
 
     // Set the style for all the elements
-    setStyle(){
-        this.slidesWrapper.style.width = `${this.nbSlides*100}%`;
-        this.slides.forEach((slide) => {slide.style.width = `${this.ratio}%`});
+    setStyle() {
+        this.slidesWrapper.style.width = `${this.nbSlides * 100}%`;
+        this.slides.forEach((slide) => { slide.style.width = `${this.ratio}%` });
         const slidesWrapperHeight = this.slidesWrapper.offsetHeight;
-        this.arrowLeft.style.top = `${(slidesWrapperHeight/2)}px`;
-        this.arrowRight.style.top = `${(slidesWrapperHeight/2)}px`;
+        this.arrowLeft.style.top = `${(slidesWrapperHeight / 2)}px`;
+        this.arrowRight.style.top = `${(slidesWrapperHeight / 2)}px`;
     }
 
-    goTo(){
+    goTo() {
         this.slidesWrapper.style.transform = `translateX(${-this.index * this.ratio}%)`;
     }
 
     // Create a new html element with classes
-    static createElement(type, ...classList){
+    static createElement(type, ...classList) {
         const el = document.createElement(type);
-        classList.forEach((className) => {el.classList.add(className)});
+        classList.forEach((className) => { el.classList.add(className) });
         return el;
     }
 
-    toString(){
+    toString() {
         return `number of slides: ${this.slides.length}`;
     }
 }
