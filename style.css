@@ -46,11 +46,11 @@ html, body{
     width: 2.2rem;
 }
 
-.arrow-right svg{
+.slideshow__arrow-right svg{
     transform: rotate(180deg);
 }
 
-.slideshow__indicators-trail{
+.slideshow__indicators-list{
     flex: 1 0 100%;
     display: flex;
     padding: 0.8rem 0;

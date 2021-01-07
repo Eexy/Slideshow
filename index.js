@@ -8,82 +8,135 @@ class Slideshow {
         this.arrowRight = null;
         this.frame = null;
         this.nbSlides = this.slides.length;
-        this.indicators = null;
+        this.indicatorsList = null;
         this.ratio = 100 / this.nbSlides;
         this.loop = this.element.getAttribute("data-loop") == "true" ? true : false;
 
         this.render();
-        this.setStyle();
-
-        this.setIndex(Number(this.loop));
+        this.changeSlide(Number(this.loop));
     }
 
-    // Create the final html element
+    // Render the final element
     render() {
+        if (this.loop) this.createLoop();
+        this.buildSlides();
+        this.buildArrows();
+        this.buildIndicator();
+        this.buildElement();
+        this.setStyle();
+    }
+
+    // Build the element by appending all of it's child
+    buildElement() {
         this.frame = Slideshow.createElement('div', 'slideshow__frame');
-        this.slidesWrapper = Slideshow.createElement('div', 'slideshow__slides-trail');
-        this.indicators = Array(this.nbSlides).fill().map((el, i) => el = Slideshow.createElement('button', 'slideshow__indicator'));
-
-        if (this.loop) {
-            this.createLoop();
-
-            this.slidesWrapper.addEventListener('transitionend', () => {
-                if (this.index == 0 || this.index == this.nbSlides - 1) {
-                    this.slidesWrapper.style.transition = 'none';
-                    if (this.index == 0) {
-                        this.index = this.nbSlides - 2;
-                    } else if(this.index == this.nbSlides - 1){
-                        this.index = 1;
-                    }
-                    this.setIndex(this.index);
-                    setTimeout(() => {
-                        this.slidesWrapper.style.transition = 'transform 0.3s';
-                    }, 0)
-                }
-                // this.setActiveIndicator();
-            });
-        }
-
-        this.slides.forEach((slide) => { this.slidesWrapper.appendChild(slide) });
-        this.arrowLeft = Slideshow.createElement('button', 'slideshow__arrow', 'arrow-left');
-        this.arrowLeft.appendChild(Slideshow.createNavSvg());
-        this.arrowRight = Slideshow.createElement('button', 'slideshow__arrow', 'arrow-right');
-        this.arrowRight.appendChild(Slideshow.createNavSvg());
         this.frame.appendChild(this.slidesWrapper);
-        this.indicatorsWrapper = Slideshow.createElement('div', 'slideshow__indicators-trail');
-
-        this.indicators.forEach((el, index) => {
-            this.indicatorsWrapper.appendChild(el);
-            el.addEventListener('click', () => {
-                this.setIndex(index + Number(this.loop));
-            })
-        });
-
-        this.indicators[0].classList.add('active');
-
-        this.arrowLeft.addEventListener('click', () => {
-            this.setIndex(this.index - 1);
-        });
-        this.arrowRight.addEventListener('click', () => {
-            this.setIndex(this.index + 1);
-        });
 
         this.element.appendChild(this.arrowLeft);
         this.element.appendChild(this.frame);
         this.element.appendChild(this.arrowRight);
-        this.element.appendChild(this.indicatorsWrapper);
+        this.element.appendChild(this.indicatorsList);
     }
 
+    /* 
+        if loop option is activate
+        copy the first and the la slide to create a loop effect
+    */
     createLoop() {
         const firstSlideCopy = this.slides[0].cloneNode(true);
         const lastSlideCopy = this.slides[this.nbSlides - 1].cloneNode(true);
 
+        firstSlideCopy.classList.add('slideshow__slide-cloned');
+        lastSlideCopy.classList.add('slideshow__slide-cloned');
+
         this.slides.push(firstSlideCopy);
         this.slides.unshift(lastSlideCopy);
-        this.nbSlides = this.slides.length;
-        this.ratio = 100 / this.nbSlides;
     }
 
+    /* 
+        Create the arrow button
+    */
+    buildArrows() {
+        this.arrowLeft = Slideshow.createElement('button', 'slideshow__arrow', 'slideshow__arrow-left');
+        this.arrowLeft.appendChild(Slideshow.createNavSvg());
+        this.arrowRight = Slideshow.createElement('button', 'slideshow__arrow', 'slideshow__arrow-right');
+        this.arrowRight.appendChild(Slideshow.createNavSvg());
+
+        this.arrowLeft.addEventListener('click', this.prev.bind(this));
+        this.arrowRight.addEventListener('click', this.next.bind(this));
+    }
+
+    /* 
+        Create the indicators
+    */
+    buildIndicator() {
+        this.indicatorsList = Slideshow.createElement('ul', 'slideshow__indicators-list');
+        this.indicators = Array(this.slides.length).fill().map((indicator, i) => {
+            indicator = Slideshow.createElement('button', 'slideshow__indicator');
+            indicator.setAttribute('data-slide-to', i);
+            // Everytime we click on a indicator with go to the i-nth  slide
+            indicator.addEventListener('click', () => this.changeSlide(i));
+            this.indicatorsList.appendChild(indicator);
+            return indicator;
+        });
+
+        /* 
+            if the loop option is activated we delete the first and last indicators
+            because they corresponds to the cloned slide 
+        */
+        if(this.loop){
+            // Delete from the node list
+            this.indicatorsList.removeChild(this.indicatorsList.firstChild);
+            this.indicatorsList.removeChild(this.indicatorsList.lastChild);
+
+            // delete from the array
+            this.indicators.pop();
+            this.indicators.shift();
+        }
+
+        this.element.appendChild(this.indicatorsList);
+    }
+
+    buildSlides() {
+        this.slidesWrapper = Slideshow.createElement('div', 'slideshow__slides-trail');
+        this.slides.forEach((slide) => {
+            this.slidesWrapper.appendChild(slide)
+        });
+
+        this.nbSlides = this.slides.length;
+
+        /* 
+            If the loop option is activated when we arrive to the cloned slide
+            and the transition is finished we stop the animation and go to their 
+            original slide and restart the animation
+        */
+        if (this.loop) {
+            this.slidesWrapper.addEventListener('transitionend', () => this.handleInfinite());
+        }
+    }
+
+    handleInfinite() {
+        if (this.index == 0 || this.index == this.nbSlides - 1) {
+            this.cancelAnimation();
+            if (this.index == 0) {
+                this.changeSlide(this.nbSlides - 2);
+            } else if(this.index == this.nbSlides - 1){
+                this.changeSlide(1);
+            }
+            setTimeout(() => this.setAnimation(), 0);
+        }
+    }
+
+    // stop the animation of the slideWrapper
+    cancelAnimation() {
+        this.slidesWrapper.style.transition = 'none';
+    }
+
+    // activate the transition if it was delete
+    setAnimation() {
+        this.slidesWrapper.style.transition = 'transform 0.3s';
+    }
+
+    // Create the arrow icon for the button
     static createNavSvg() {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -95,26 +148,51 @@ class Slideshow {
         return svg;
     }
 
-    setActiveIndicator(){
-        this.indicatorsWrapper.querySelector('.active').classList.remove('active');
-        this.indicators[this.index - Number(this.loop)].classList.add('active');
+    // go to the next slide
+    next() {
+        if (this.index < this.nbSlides - 1) this.changeSlide(this.index + 1);
     }
 
-    setIndex(_index) {
-        if (_index >= 0 && _index < this.nbSlides) {
-            this.index = _index;
-            this.goTo();
+    // go to the previous slide
+    prev() {
+        if (this.index > 0) this.changeSlide(this.index - 1);
+    }
 
-            if(this.loop && (this.index >= 1 && this.index <= this.indicators.length)){
-                this.setActiveIndicator();
-            }else if(!this.loop){
-                this.setActiveIndicator();
+    changeSlide(newIndex) {
+        this.index = newIndex;
+        this.goTo();
+
+        this.updateIndicator(newIndex);
+    }
+
+
+    // update the list of indicator to active the correct one
+    updateIndicator(newIndex) {
+        // search for the current indicator and delete the active class
+        this.indicators.forEach((el) => {
+            if(el.classList.contains('active')){
+                el.classList.remove('active');
+            }
+        })
+        
+        /* 
+            if there is a loop there is less indicators than there is slides so we correspond the first slide
+            and the last to the first indicator and the last
+        */
+        if(this.loop){
+            if(newIndex == 0){
+                newIndex = this.indicators.length - 2;
+            }else if(newIndex == this.nbSlides - 1){
+                newIndex = 1;
             }
         }
+
+        this.indicators[newIndex - Number(this.loop)].classList.add('active');
     }
 
     // Set the style for all the elements
     setStyle() {
+        this.ratio = 100 / this.nbSlides;
         this.slidesWrapper.style.width = `${this.nbSlides * 100}%`;
         this.slides.forEach((slide) => { slide.style.width = `${this.ratio}%` });
         const slidesWrapperHeight = this.slidesWrapper.offsetHeight;
@@ -122,6 +200,7 @@ class Slideshow {
         this.arrowRight.style.top = `${(slidesWrapperHeight / 2)}px`;
     }
 
+    // Ask the slideWrapper to move to the correct slide
     goTo() {
         this.slidesWrapper.style.transform = `translateX(${-this.index * this.ratio}%)`;
     }
@@ -134,7 +213,9 @@ class Slideshow {
     }
 
     toString() {
-        return `number of slides: ${this.slides.length}`;
+        return `number of slides: ${this.slides.length} 
+        current slide: ${this.index - Number(this.loop)}
+        `;
     }
 }
 
