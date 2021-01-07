@@ -1,7 +1,7 @@
 class Slideshow {
     constructor(_element) {
         this.element = _element;
-        this.slides = Array.from(_element.querySelectorAll('.slide'));
+        this.slides = Array.from(_element.querySelectorAll('.slideshow__slide'));
         this.slidesWrapper = null;
         this.index = 0;
         this.arrowLeft = null;
@@ -20,9 +20,9 @@ class Slideshow {
 
     // Create the final html element
     render() {
-        this.frame = Slideshow.createElement('div', 'frame');
-        this.slidesWrapper = Slideshow.createElement('div', 'slides-wrapper');
-        this.indicators = Array(this.nbSlides).fill().map((el, i) => el = Slideshow.createElement('button', 'indicator'));
+        this.frame = Slideshow.createElement('div', 'slideshow__frame');
+        this.slidesWrapper = Slideshow.createElement('div', 'slideshow__slides-trail');
+        this.indicators = Array(this.nbSlides).fill().map((el, i) => el = Slideshow.createElement('button', 'slideshow__indicator'));
 
         if (this.loop) {
             this.createLoop();
@@ -45,12 +45,12 @@ class Slideshow {
         }
 
         this.slides.forEach((slide) => { this.slidesWrapper.appendChild(slide) });
-        this.arrowLeft = Slideshow.createElement('button', 'arrow', 'arrow-left');
+        this.arrowLeft = Slideshow.createElement('button', 'slideshow__arrow', 'arrow-left');
         this.arrowLeft.appendChild(Slideshow.createNavSvg());
-        this.arrowRight = Slideshow.createElement('button', 'arrow', 'arrow-right');
+        this.arrowRight = Slideshow.createElement('button', 'slideshow__arrow', 'arrow-right');
         this.arrowRight.appendChild(Slideshow.createNavSvg());
         this.frame.appendChild(this.slidesWrapper);
-        this.indicatorsWrapper = Slideshow.createElement('div', 'indicators');
+        this.indicatorsWrapper = Slideshow.createElement('div', 'slideshow__indicators-trail');
 
         this.indicators.forEach((el, index) => {
             this.indicatorsWrapper.appendChild(el);
@@ -72,8 +72,6 @@ class Slideshow {
         this.element.appendChild(this.frame);
         this.element.appendChild(this.arrowRight);
         this.element.appendChild(this.indicatorsWrapper);
-
-
     }
 
     createLoop() {

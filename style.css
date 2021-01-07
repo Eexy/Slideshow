@@ -13,20 +13,20 @@ html, body{
     padding-top: 10px;
 }
 
-.frame{
+.slideshow__frame{
     flex: 1;
     overflow: hidden;
     border-radius: 5px;
 }
 
-.slides-wrapper{
+.slideshow__slides-trail{
     display: flex;
     transform: translateX(0%);
     transition: transform 0.3s ease;
     height: 100%;
 }
 
-.arrow{
+.slideshow__arrow{
     box-sizing: border-box;
     display: block;
     border: none;
@@ -39,7 +39,7 @@ html, body{
     margin-top: -1.1rem;
 }
 
-.arrow svg{
+.slideshow__arrow svg{
     box-sizing: border-box;
     display: block;
     height: 2.2rem;
@@ -50,14 +50,14 @@ html, body{
     transform: rotate(180deg);
 }
 
-.indicators{
+.slideshow__indicators-trail{
     flex: 1 0 100%;
     display: flex;
     padding: 0.8rem 0;
     justify-content: center;
 }
 
-.indicator{
+.slideshow__indicator{
     padding: 0;
     display: block;
     background: rgba(43, 43, 43, 0.295);
